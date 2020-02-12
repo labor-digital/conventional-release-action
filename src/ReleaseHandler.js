@@ -33,41 +33,44 @@ module.exports = class ReleaseAction {
 		const infile = releaseElements.changelogMd;
 		const infileRelative = path.relative(releaseElements.config, infile);
 
-		// Apply some fixes and load standard-version
-		ReleaseAction._applyAdjustmentsToStandardVersionBump();
-		ReleaseAction._applyBugFixForConventionalChangelogNotGettingAVersionWhenNoPackageJson(releaseElements);
-		const standardVersion = require("standard-version");
+		// Prepare git
+		const git = new Git();
+		git.initialize().then(() => {
+			// Apply some fixes and load standard-version
+			ReleaseAction._applyAdjustmentsToStandardVersionBump();
+			ReleaseAction._applyBugFixForConventionalChangelogNotGettingAVersionWhenNoPackageJson(releaseElements);
+			const standardVersion = require("standard-version");
 
-		// Prepare standard version environment
-		const environment = {
-			path: rootDirectory,
-			infile: infileRelative,
-			gitTagFallback: true,
-			message: "chore(release): %s [SKIP CI]",
-			skip: {}
-		};
+			// Prepare standard version environment
+			const environment = {
+				path: rootDirectory,
+				infile: infileRelative,
+				gitTagFallback: true,
+				message: "chore(release): %s [SKIP CI]",
+				skip: {}
+			};
 
-		// Run standard version
-		process.chdir(releaseElements.config);
-		standardVersion(environment)
-			.then(() => {
-				// Push the version to the output
-				core.setOutput("version", newVersion);
-				core.info(`New version: ${newVersion}`);
-			})
-			.then(() => {
-				// GIT PUSH
-				return new Promise((resolve, reject) => {
-					const git = new Git();
-					git.initialize()
-						.then(() => git.push())
-						.then(resolve)
-						.catch(reject);
-				});
-			})
-			.catch(err => {
-				core.setFailed(err);
-			});
+			// Run standard version
+			process.chdir(releaseElements.config);
+			standardVersion(environment)
+				.then(() => {
+					// Push the version to the output
+					core.setOutput("version", newVersion);
+					core.info(`New version: ${newVersion}`);
+				})
+				.then(() => {
+					// GIT PUSH
+					return new Promise((resolve, reject) => {
+						git.push()
+							.then(resolve)
+							.catch(reject);
+					});
+				})
+				.catch(err => core.setFailed(err));
+		})
+			.catch(err => core.setFailed(err));
+
+
 	}
 
 	/**
