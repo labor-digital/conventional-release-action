@@ -1,0 +1,13 @@
+name: 'LABOR - Conventional Release Action'
+description: 'An action for creating a changelog and bumping your package versions based on conventional commit messages'
+inputs:
+  github-token:
+    description: 'The github access token for the push back'
+    required: true
+
+outputs:
+  version:
+    description: 'The new version the package was bumped to'
+runs:
+  using: 'node12'
+  main: 'src/main.js'

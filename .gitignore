@@ -1,0 +1,12 @@
+node_modules
+.settings/
+.DS_Store
+.env
+.unison*
+
+# IDEA Code Style
+.idea/*
+!.idea/copyright/
+!.idea/copyright/*
+!.idea/codeStyles/
+!.idea/codeStyles/*
