@@ -59,7 +59,10 @@ module.exports = class ReleaseAction {
 				// GIT PUSH
 				return new Promise((resolve, reject) => {
 					const git = new Git();
-					git.push().then(resolve).catch(reject);
+					git.initialize()
+						.then(() => git.push())
+						.then(resolve)
+						.catch(reject);
 				});
 			})
 			.catch(err => {

@@ -32,21 +32,20 @@ const branch = GITHUB_REF.replace("refs/heads/", "");
 
 module.exports = class Git {
 
-	constructor() {
-		const githubToken = core.getInput("github-token", {required: true});
-
+	/**
+	 * Initializes the git repository and configuration
+	 * @return {Promise<>}
+	 */
+	initialize() {
 		// Make the Github token secret
+		const githubToken = core.getInput("github-token", {required: true});
 		core.setSecret(githubToken);
 
-		// Set config
-		this.config("user.name", "Conventional Changelog Action");
-		this.config("user.email", "conventional.changelog.action@github.com");
-
-		// Update the origin
-		this.updateOrigin(`https://x-access-token:${githubToken}@github.com/${GITHUB_REPOSITORY}.git`);
-
-		// Checkout the branch
-		this.checkout();
+		return Promise.all([
+			this.config("user.name", "Conventional Release Action"),
+			this.config("user.email", "conventional.release.action@github.com")
+		]).then(() => this.updateOrigin(`https://x-access-token:${githubToken}@github.com/${GITHUB_REPOSITORY}.git`))
+			.then(() => this.checkout());
 	}
 
 	/**
