@@ -54,7 +54,7 @@ module.exports = class ReleaseAction {
 			// Check if there are special bump actions to perform
 			const filename = path.join(rootDirectory, "after-release.js");
 			console.log("node " + filename + " " + newVersion, require("fs").exists(filename));
-			if (require("fs").exists(filename))
+			if (require("fs").existsSync(filename))
 				environment.scripts.postbump = "node " + filename + " " + newVersion;
 
 			// Run standard version
