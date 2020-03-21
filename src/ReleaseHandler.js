@@ -54,7 +54,7 @@ module.exports = class ReleaseAction {
 			// Check if there are special bump actions to perform
 			const filename = path.join(rootDirectory, "after-release.js");
 			if (require("fs").existsSync(filename))
-				environment.scripts.postbump = "node " + filename + " " + newVersion;
+				environment.scripts.postbump = "node " + filename + " " + newVersion + " && git add";
 
 			// Run standard version
 			process.chdir(releaseElements.config);
