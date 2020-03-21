@@ -61,7 +61,6 @@ module.exports = class ReleaseAction {
 			standardVersion(environment)
 				.then(() => {
 					// Push the version to the output
-					core.setOutput("version", newVersion);
 					core.info(`New version: ${newVersion}`);
 				})
 				.then(() => {
