@@ -32,5 +32,5 @@ jobs:
 
 ```
 
-## After Release action
-If your project contains a after-release.js file. The file will be executed after the version has been bumped but before the changes are pushed back to the repository.
+## After Bump action
+If your project contains a after-bump.js file. The file will be executed after the version has been bumped but before the changes are pushed back to the repository.

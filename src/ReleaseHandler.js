@@ -51,11 +51,6 @@ module.exports = class ReleaseAction {
 				scripts: {}
 			};
 
-			// Check if there are special bump actions to perform
-			const filename = path.join(rootDirectory, "after-release.js");
-			if (require("fs").existsSync(filename))
-				environment.scripts.postbump = "node " + filename + " " + newVersion + " && git add";
-
 			// Run standard version
 			process.chdir(releaseElements.config);
 			standardVersion(environment)
@@ -88,6 +83,7 @@ module.exports = class ReleaseAction {
 		const bumpPath = require.resolve("standard-version/lib/lifecycles/bump");
 		const gitSemverTags = require("git-semver-tags");
 		const semver = require("semver");
+		const runExec = require("standard-version/lib/run-exec");
 
 		// Create bump wrapper that provides a fallback version number
 		const BumpWrapper = function (args, version) {
@@ -108,6 +104,14 @@ module.exports = class ReleaseAction {
 				// Call the real bump method
 				return Bump(args, version).then(version => {
 					newVersion = version;
+
+					// Check if there are special bump actions to perform
+					const filename = path.join(rootDirectory, "after-bump.js");
+					if (require("fs").existsSync(filename)) {
+						console.log("Running after-bump.js with version " + newVersion);
+						return runExec("node " + filename + " " + newVersion + " && git add .");
+					}
+
 					return Promise.resolve(version);
 				});
 			});
