@@ -52,9 +52,9 @@ module.exports = class ReleaseAction {
 			};
 
 			// Check if there are special bump actions to perform
-			const filename = path.join(rootDirectory, "after-release.js");
-			if (require("fs").exists(filename))
-				environment.scripts.postbump = "node " + filename + " " + newVersion;
+			// const filename = path.join(rootDirectory, "after-release.js");
+			// if (require("fs").exists(filename))
+			// 	environment.scripts.postbump = "node " + filename + " " + newVersion;
 
 			// Run standard version
 			process.chdir(releaseElements.config);
