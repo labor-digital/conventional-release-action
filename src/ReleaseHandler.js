@@ -48,20 +48,13 @@ module.exports = class ReleaseAction {
 				gitTagFallback: true,
 				message: "chore(release): %s [SKIP CI]",
 				skip: {},
-				scripts: {
-					'postbump': function () {
-						// Check if there are special bump actions to perform
-						const filename = path.join(rootDirectory, "after-release.js");
-						if (require("fs").exists(filename))
-							return new Promise((resolve, reject) => {
-								console.log("Executing after-release action at: " + filename);
-								require("child_process").exec("node " + filename + " " + newVersion, undefined, function () {
-									resolve();
-								});
-							});
-					}
-				}
+				scripts: {}
 			};
+
+			// Check if there are special bump actions to perform
+			const filename = path.join(rootDirectory, "after-release.js");
+			if (require("fs").exists(filename))
+				environment.scripts.postbump = "node " + filename + " " + newVersion;
 
 			// Run standard version
 			process.chdir(releaseElements.config);
