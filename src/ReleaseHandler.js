@@ -109,7 +109,7 @@ module.exports = class ReleaseAction {
 					const filename = path.join(args.path, "after-bump.js");
 					if (require("fs").existsSync(filename)) {
 						console.log("Running after-bump.js with version " + newVersion);
-						return runExec("node " + filename + " " + newVersion + " && git add .");
+						return runExec(args, "node " + filename + " " + newVersion + " && git add .");
 					}
 
 					return Promise.resolve(version);
