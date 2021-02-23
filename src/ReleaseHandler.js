@@ -22,127 +22,133 @@ const Git = require("./Git");
 
 let newVersion = null;
 
-module.exports = class ReleaseAction {
+module.exports = class ReleaseHandler {
 
-	static handle() {
+    static handle() {
 
-		const releaseElements = PathFinder.findReleaseElements(true);
+        const releaseElements = PathFinder.findReleaseElements(true);
 
-		// Make changelog path relative
-		const rootDirectory = releaseElements.git === null ? releaseElements.config : releaseElements.git;
-		const infile = releaseElements.changelogMd;
-		const infileRelative = path.relative(releaseElements.config, infile);
+        // Make changelog path relative
+        const rootDirectory = releaseElements.git === null ? releaseElements.config : releaseElements.git;
+        const infile = releaseElements.changelogMd;
+        const infileRelative = path.relative(releaseElements.config, infile);
 
-		// Prepare git
-		const git = new Git();
-		git.initialize().then(() => {
-			// Apply some fixes and load standard-version
-			ReleaseAction._applyAdjustmentsToStandardVersionBump();
-			ReleaseAction._applyBugFixForConventionalChangelogNotGettingAVersionWhenNoPackageJson(releaseElements);
-			const standardVersion = require("standard-version");
+        // Prepare git
+        const git = new Git();
+        git.initialize().then(() => {
+            // Apply some fixes and load standard-version
+            ReleaseHandler._applyAdjustmentsToStandardVersionBump();
+            ReleaseHandler._applyBugFixForConventionalChangelogNotGettingAVersionWhenNoPackageJson(releaseElements);
+            const standardVersion = require("standard-version");
 
-			// Prepare standard version environment
-			const environment = {
-				path: rootDirectory,
-				infile: infileRelative,
-				gitTagFallback: true,
-				message: "chore(release): %s [SKIP CI]",
-				skip: {},
-				scripts: {}
-			};
+            const packageFiles = [];
+            if (releaseElements.packageJson) {
+                packageFiles.push(releaseElements.packageJson);
+            }
+            if (releaseElements.composerJson) {
+                packageFiles.push(releaseElements.composerJson);
+            }
 
-			// Run standard version
-			process.chdir(releaseElements.config);
-			standardVersion(environment)
-				.then(() => {
-					// Push the version to the output
-					core.info(`New version: ${newVersion}`);
-				})
-				.then(() => {
-					// GIT PUSH
-					return new Promise((resolve, reject) => {
-						git.push()
-							.then(resolve)
-							.catch(reject);
-					});
-				})
-				.catch(err => core.setFailed(err));
-		})
-			.catch(err => core.setFailed(err));
+            const environment = {
+                path: rootDirectory,
+                infile: infileRelative,
+                gitTagFallback: true,
+                message: "chore(release): %s [SKIP CI]",
+                skip: {},
+                scripts: {},
+                packageFiles: packageFiles
+            };
 
+            // Run standard version
+            process.chdir(releaseElements.config);
+            standardVersion(environment)
+                .then(() => {
+                    // Push the version to the output
+                    core.info(`New version: ${newVersion}`);
+                })
+                .then(() => {
+                    // GIT PUSH
+                    return new Promise((resolve, reject) => {
+                        git.push()
+                            .then(resolve)
+                            .catch(reject);
+                    });
+                })
+                .catch(err => core.setFailed(err));
+        })
+            .catch(err => core.setFailed(err));
+    }
 
-	}
+    /**
+     * Wraps the "Bump" class of standard-version to make sure we determine a reliable version,
+     * even if all other methods of version guessing failed
+     * @internal
+     */
+    static _applyAdjustmentsToStandardVersionBump() {
+        const Bump = require("standard-version/lib/lifecycles/bump");
+        const bumpPath = require.resolve("standard-version/lib/lifecycles/bump");
+        const gitSemverTags = require("git-semver-tags");
+        const semver = require("semver");
+        const runExec = require("standard-version/lib/run-exec");
 
-	/**
-	 * Wraps the "Bump" class of standard-version to make sure we determine a reliable version,
-	 * even if all other methods of version guessing failed
-	 * @internal
-	 */
-	static _applyAdjustmentsToStandardVersionBump() {
-		const Bump = require("standard-version/lib/lifecycles/bump");
-		const bumpPath = require.resolve("standard-version/lib/lifecycles/bump");
-		const gitSemverTags = require("git-semver-tags");
-		const semver = require("semver");
-		const runExec = require("standard-version/lib/run-exec");
+        // Create bump wrapper that provides a fallback version number
+        const BumpWrapper = function (args, version) {
 
-		// Create bump wrapper that provides a fallback version number
-		const BumpWrapper = function (args, version) {
+            // Make sure we always have a valid version number
+            return (new Promise((resolve, reject) => {
+                gitSemverTags(function (err, tags) {
+                    if (err !== null) return reject(err);
+                    let gitVersion = "v0.0.0";
+                    if (tags.length > 0) gitVersion = tags.shift();
+                    gitVersion = semver.clean(gitVersion);
+                    resolve(gitVersion);
+                }, {tagPrefix: args.tagPrefix});
+            })).then(gitVersion => {
+                if (version === null || typeof version === "undefined" || semver.gt(gitVersion, version))
+                    version = gitVersion;
 
-			// Make sure we always have a valid version number
-			return (new Promise((resolve, reject) => {
-				gitSemverTags(function (err, tags) {
-					if (err !== null) return reject(err);
-					let gitVersion = "v0.0.0";
-					if (tags.length > 0) gitVersion = tags.shift();
-					gitVersion = semver.clean(gitVersion);
-					resolve(gitVersion);
-				}, {tagPrefix: args.tagPrefix});
-			})).then(gitVersion => {
-				if (version === null || typeof version === "undefined" || semver.gt(gitVersion, version))
-					version = gitVersion;
+                // Call the real bump method
+                return Bump(args, version).then(version => {
+                    newVersion = version;
 
-				// Call the real bump method
-				return Bump(args, version).then(version => {
-					newVersion = version;
+                    // Check if there are special bump actions to perform
+                    const filename = path.join(args.path, "after-bump.js");
+                    if (require("fs").existsSync(filename)) {
+                        console.log("Running after-bump.js with version " + newVersion);
+                        console.log("All modified files will be committed back to the repository!");
+                        args.commitAll = true;
+                        return runExec(args, "node " + filename + " " + newVersion + " && git add .")
+                            .then((output) => {
+                                console.log(output);
+                                return Promise.resolve(version);
+                            });
+                    }
+                    return Promise.resolve(version);
+                });
+            });
+        };
+        BumpWrapper.getUpdatedConfigs = Bump.getUpdatedConfigs;
 
-					// Check if there are special bump actions to perform
-					const filename = path.join(args.path, "after-bump.js");
-					if (require("fs").existsSync(filename)) {
-						console.log("Running after-bump.js with version " + newVersion);
-						console.log("All modified files will be committed back to the repository!");
-						args.commitAll = true;
-						return runExec(args, "node " + filename + " " + newVersion + " && git add .")
-							.then((output) => {
-								console.log(output);
-								return Promise.resolve(version);
-							});
-					}
-					return Promise.resolve(version);
-				});
-			});
-		};
-		BumpWrapper.getUpdatedConfigs = Bump.getUpdatedConfigs;
+        // Inject wrapper
+        require.cache[bumpPath].exports = BumpWrapper;
+    }
 
-		// Inject wrapper
-		require.cache[bumpPath].exports = BumpWrapper;
-	}
+    /**
+     * Somehow there is a strange bug in conventional-changelog (used internally by standardVersion to generate the changelog)
+     * that causes the changelog generation to break because when there is no package.json file present.
+     * To circumvent that we will supply it with the version number we extracted from the bump script.
+     * @private
+     */
+    static _applyBugFixForConventionalChangelogNotGettingAVersionWhenNoPackageJson(releaseElements) {
+        if (releaseElements.packageJson !== null) return;
+        const cc = require("conventional-changelog");
+        const ccPath = require.resolve("conventional-changelog");
 
-	/**
-	 * Somehow there is a strange bug in conventional-changelog (used internally by standardVersion to generate the changelog)
-	 * that causes the changelog generation to break because when there is no package.json file present.
-	 * To circumvent that we will supply it with the version number we extracted from the bump script.
-	 * @private
-	 */
-	static _applyBugFixForConventionalChangelogNotGettingAVersionWhenNoPackageJson(releaseElements) {
-		if (releaseElements.packageJson !== null) return;
-		const cc = require("conventional-changelog");
-		const ccPath = require.resolve("conventional-changelog");
-
-		// Inject wrapper
-		require.cache[ccPath].exports = function (options, context, gitRawCommitsOpts, parserOpts, writerOpts) {
-			if (typeof context === "object" && typeof context !== "undefined") context.version = newVersion;
-			else context = {version: newVersion};
-			return cc(options, context, gitRawCommitsOpts, parserOpts, writerOpts);
-		};
-	}
+        // Inject wrapper
+        require.cache[ccPath].exports = function (options, context, gitRawCommitsOpts, parserOpts, writerOpts) {
+            if (typeof context === "object" && typeof context !== "undefined") context.version = newVersion;
+            else context = {version: newVersion};
+            return cc(options, context, gitRawCommitsOpts, parserOpts, writerOpts);
+        };
+    }
 };
