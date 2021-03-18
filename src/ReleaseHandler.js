@@ -46,7 +46,10 @@ module.exports = class ReleaseHandler {
                 packageFiles.push(releaseElements.packageJson);
             }
             if (releaseElements.composerJson) {
-                packageFiles.push(releaseElements.composerJson);
+                packageFiles.push({
+                    filename: releaseElements.composerJson,
+                    type: 'json'
+                });
             }
 
             const environment = {
