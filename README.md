@@ -1,4 +1,4 @@
-#LABOR - Conventional Release Action
+# LABOR - Conventional Release Action
 
 A github action that generates a CHANGELOG.md and updates your package.json as well as the composer.json of your project after you pushed a new release.
 
