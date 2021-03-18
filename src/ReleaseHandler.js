@@ -42,14 +42,17 @@ module.exports = class ReleaseHandler {
             const standardVersion = require("standard-version");
 
             const packageFiles = [];
+            const bumpFiles = [];
             if (releaseElements.packageJson) {
                 packageFiles.push(releaseElements.packageJson);
+                bumpFiles.push(releaseElements.packageJson);
             }
             if (releaseElements.composerJson) {
                 packageFiles.push({
                     filename: releaseElements.composerJson,
                     type: 'json'
                 });
+                bumpFiles.push(releaseElements.composerJson);
             }
 
             const environment = {
@@ -59,7 +62,8 @@ module.exports = class ReleaseHandler {
                 releaseCommitMessageFormat: "chore(release): {{currentTag}} [SKIP CI]",
                 skip: {},
                 scripts: {},
-                packageFiles: packageFiles
+                packageFiles,
+                bumpFiles
             };
 
             // Run standard version
