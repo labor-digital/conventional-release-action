@@ -52,7 +52,10 @@ module.exports = class ReleaseHandler {
                     filename: releaseElements.composerJson,
                     type: 'json'
                 });
-                bumpFiles.push(releaseElements.composerJson);
+                bumpFiles.push({
+                    filename: releaseElements.composerJson,
+                    type: 'json'
+                });
             }
 
             const environment = {
