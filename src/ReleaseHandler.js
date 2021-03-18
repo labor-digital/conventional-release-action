@@ -53,7 +53,7 @@ module.exports = class ReleaseHandler {
                 path: rootDirectory,
                 infile: infileRelative,
                 gitTagFallback: true,
-                message: "chore(release): %s [SKIP CI]",
+                releaseCommitMessageFormat: "chore(release): {{currentTag}} [SKIP CI]",
                 skip: {},
                 scripts: {},
                 packageFiles: packageFiles
