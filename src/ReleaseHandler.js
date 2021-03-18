@@ -57,6 +57,12 @@ module.exports = class ReleaseHandler {
                     type: 'json'
                 });
             }
+            if (releaseElements.composerLock) {
+                bumpFiles.push({
+                    filename: releaseElements.composerLock,
+                    type: 'json'
+                });
+            }
 
             const environment = {
                 path: rootDirectory,
