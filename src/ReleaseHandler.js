@@ -123,6 +123,11 @@ module.exports = class ReleaseHandler {
                 if (version === null || typeof version === "undefined" || semver.gt(gitVersion, version))
                     version = gitVersion;
 
+                const preRelease = core.getInput('preRelease');
+                if (preRelease !== '') {
+                    args.preRelease = preRelease;
+                }
+                
                 // Call the real bump method
                 return Bump(args, version).then(version => {
                     newVersion = version;
