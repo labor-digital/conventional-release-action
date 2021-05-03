@@ -33,6 +33,8 @@ jobs:
         with:
           github-token: ${{ secrets.github_token }}
           [ preRelease: rc ] // Allows you to create pre-release version numbeers
+          [ preMajor: true ] // If preRelease is set, this is true automatically
+          // which will disable the semver version to be bumped.
           [ dryRun: true ] // Only simulate the action
           [ tagPrefix: v ] // "v" is already the default
 
