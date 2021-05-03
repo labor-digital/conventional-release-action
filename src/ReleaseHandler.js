@@ -71,6 +71,8 @@ module.exports = class ReleaseHandler {
                 releaseCommitMessageFormat: "chore(release): {{currentTag}} [SKIP CI]",
                 skip: {},
                 scripts: {},
+                tagPrefix: core.getInput('tagPrefix') === '' ? 'v' : core.getInput('tagPrefix'),
+                dryRun: core.getInput('preRelease').toLowerCase() === 'true',
                 packageFiles,
                 bumpFiles
             };
@@ -125,14 +127,18 @@ module.exports = class ReleaseHandler {
 
                 const preRelease = core.getInput('preRelease');
                 if (preRelease !== '') {
-                    args.preRelease = preRelease;
+                    args.prerelease = preRelease;
                 }
 
-                console.log('preRelease', preRelease, args);
-                process.exit(1);
                 // Call the real bump method
                 return Bump(args, version).then(version => {
                     newVersion = version;
+
+                    if (args.dryRun) {
+                        console.log('DryRun is executing! Skipping post bump actions!');
+                        console.log('Generated new version number:' + version);
+                        return Promise.resolve(version);
+                    }
 
                     // Check if there are special bump actions to perform
                     const filename = path.join(args.path, "after-bump.js");

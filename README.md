@@ -32,7 +32,9 @@ jobs:
         uses: labor-digital/conventional-release-action@master
         with:
           github-token: ${{ secrets.github_token }}
-          [ preRelease: rc ]
+          [ preRelease: rc ] // Allows you to create pre-release version numbeers
+          [ dryRun: true ] // Only simulate the action
+          [ tagPrefix: v ] // "v" is already the default
 
 ```
 
