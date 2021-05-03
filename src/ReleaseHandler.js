@@ -127,7 +127,9 @@ module.exports = class ReleaseHandler {
                 if (preRelease !== '') {
                     args.preRelease = preRelease;
                 }
-                
+
+                console.log('preRelease', preRelease, args);
+                process.exit(1);
                 // Call the real bump method
                 return Bump(args, version).then(version => {
                     newVersion = version;
