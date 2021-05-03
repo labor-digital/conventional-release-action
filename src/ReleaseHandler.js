@@ -128,6 +128,11 @@ module.exports = class ReleaseHandler {
                 const preRelease = core.getInput('preRelease');
                 if (preRelease !== '') {
                     args.prerelease = preRelease;
+                    args.preMajor = true;
+                }
+                const preMajor = core.getInput('preMajor');
+                if (preMajor !== '') {
+                    args.preMajor = preMajor.toLowerCase() === 'true';
                 }
 
                 // Call the real bump method
