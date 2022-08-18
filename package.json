@@ -14,7 +14,7 @@
   "license": "Apache-2.0",
   "homepage": "https://github.com/labor-digital/conventional-release-action",
   "dependencies": {
-    "@actions/core": "1.2.7",
+    "@actions/core": "1.9.1",
     "@actions/exec": "1.0.4",
     "conventional-changelog-angular": "5.0.12",
     "git-semver-tags": "4.1.1",
