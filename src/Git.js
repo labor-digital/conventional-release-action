@@ -39,11 +39,13 @@ module.exports = class Git {
 	initialize() {
 		// Make the Github token secret
 		const githubToken = core.getInput("github-token", {required: true});
+		const gitUserName = core.getInput('git-user-name') === '' ? 'Conventional Release Action' : core.getInput('git-user-name')
+		const gitUserEmail = core.getInput('git-user-email') === '' ? 'conventional.release.action@github.com' : core.getInput('git-user-email')
 		core.setSecret(githubToken);
 
 		return Promise.all([
-			this.config("user.name", "Conventional Release Action"),
-			this.config("user.email", "conventional.release.action@github.com")
+			this.config("user.name", gitUserName),
+			this.config("user.email", gitUserEmail)
 		]).then(() => this.updateOrigin(`https://x-access-token:${githubToken}@github.com/${GITHUB_REPOSITORY}.git`))
 			.then(() => this.checkout());
 	}
